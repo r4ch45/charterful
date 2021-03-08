@@ -1,7 +1,11 @@
 charterful
 ==============================
 
-technical report for chartered engineer application
+Welcome to my bid to become a chartered engineer! This project will form the basis of my technical report, needed to gain chartered engineer status (I don't have a masters in engineering sadly). More details on what being chartered means, and the competence required to demonstrate this can be found at https://www.engc.org.uk/standards-guidance/standards/uk-spec/ 
+
+I'm going to examine the relationship between gas and electricity generation from gas generated powerstations here in the UK, using open source data and research. I'll cover some gas fundamentals, and dig in to some interesting data to bring these fundamentals to life (hopefully!).
+
+I'd love any and all feedback, so please do comment, raise issues, PRs or get in touch directly.
 
 Project Organization
 ------------
