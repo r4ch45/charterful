@@ -39,7 +39,7 @@ class gasgetter:
 
         dfs = []
         for itm in item_list:
-            df = self.get_individual_item_for_range(start, end, itm)
+            df = self.get_individual_item_for_range(start, end, item=itm, max_range_days=366)
 
             if df is not None:
                 df["ITEM"] = itm
@@ -52,7 +52,7 @@ class gasgetter:
             print(total_df.head())
 
         else:
-            logging.critical(f"{itm} returned no data")
+            logging.critical(f"{filter} returned no data")
             total_df = None
 
         return total_df
@@ -61,9 +61,7 @@ class gasgetter:
         self, filter="NTS Power Station, NTS Physical Flows", ignore="METER"
     ):
 
-        df = self.shopping_list[
-            self.shopping_list["Data Dictionary Category"] == "Demand"
-        ]
+        df = self.shopping_list
         df["Data Item"] = df["Data Item"].str.upper().copy()
         df = df[df["Data Item"].str.contains(str.upper(filter))]
         df = df[~df["Data Item"].str.contains(str.upper(ignore))]
@@ -74,17 +72,17 @@ class gasgetter:
             )
         return df["Data Item"].values
 
-    def get_individual_item_for_range(self, start, end, item):
+    def get_individual_item_for_range(self, start, end, item, max_range_days=365):
         dfs = []
         period_start = start
-        period_end = start + dt.timedelta(days=1)
+        period_end = min(start + dt.timedelta(days=max_range_days), end)
         logging.debug(f"MIPI: Gathering {item} - {period_start} to {end}")
 
         while period_end <= end:
-            df = self.get_individual_item(start, end, item)
+            df = self.get_individual_item(period_start, min(period_end, end), item)
             dfs.append(df)
             period_start = period_end
-            period_end = period_start + dt.timedelta(days=1)
+            period_end = period_end + dt.timedelta(days=max_range_days)
 
         if (len(dfs) > 0) and all([d is not None for d in dfs]):
             total_df = pd.concat(dfs)

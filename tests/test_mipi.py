@@ -49,7 +49,7 @@ def test_get_all_filtered_basic():
     df = gassy.get_all_filtered(
         dt.datetime(2020, 1, 1),
         dt.datetime(2020, 1, 2),
-        "NTS Energy Offtaken, BlackBridge, NTS Power Station",
+        filter = "NTS Energy Offtaken, BlackBridge, NTS Power Station",
     )
 
     desired = pd.DataFrame(
@@ -125,7 +125,7 @@ def test_get_individual_item_for_range_basic():
     df = gassy.get_individual_item_for_range(
         dt.datetime(2020, 1, 1),
         dt.datetime(2020, 1, 2),
-        "NTS Energy Offtaken, BlackBridge, NTS Power Station",
+        item = "NTS Energy Offtaken, BlackBridge, NTS Power Station",
     )
 
     desired = pd.DataFrame(
