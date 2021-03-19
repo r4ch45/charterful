@@ -39,7 +39,9 @@ class gasgetter:
 
         dfs = []
         for itm in item_list:
-            df = self.get_individual_item_for_range(start, end, item=itm, max_range_days=366)
+            df = self.get_individual_item_for_range(
+                start, end, item=itm, max_range_days=366
+            )
 
             if df is not None:
                 df["ITEM"] = itm
@@ -52,7 +54,9 @@ class gasgetter:
             print(total_df.head())
 
         else:
-            logging.critical(f"{filter} returned no data")
+            logging.critical(
+                f"All {filter} filtered items between {start} and {end} returned no data"
+            )
             total_df = None
 
         return total_df
@@ -84,11 +88,14 @@ class gasgetter:
             period_start = period_end
             period_end = period_end + dt.timedelta(days=max_range_days)
 
-        if (len(dfs) > 0) and all([d is not None for d in dfs]):
+        dfs = [d for d in dfs if d is not None]
+        if (len(dfs) > 0):
             total_df = pd.concat(dfs)
             return total_df
         else:
-            logging.critical(f"MIPI: {item} returned nothing",)
+            logging.critical(
+                f"MIPI: {item} returned nothing for range {start} to {end}",
+            )
             return None
 
     def get_individual_item(self, start, end, item):
@@ -111,7 +118,7 @@ class gasgetter:
             r = self.client.service.GetPublicationDataWM(body)
         except:
             logging.critical(
-                f"MIPI: {item} request error, try checking if item exists",
+                f"MIPI: {item} between {start} and {end} request error, try checking if item exists",
             )
             r = None
 
