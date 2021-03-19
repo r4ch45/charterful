@@ -13,8 +13,6 @@ import pandas as pd
 import datetime as dt
 import logging
 
-from pathlib import Path
-
 from mipi import gasgetter
 from data_helper import test_internet_connection
 
@@ -94,14 +92,11 @@ def main(start, end, output_dirpath, proxies):
     start = dt.datetime.strptime(start, "%Y-%m-%d")
     end = dt.datetime.strptime(end, "%Y-%m-%d")
 
-    
     logger.info("grabbing electricity actuals")
-    df = get_electricity_actuals(
-        start, end, os.environ.get("elexon_api_key"), proxies)
-    
-    print(df.head())
+    df = get_electricity_actuals(start, end, os.environ.get("elexon_api_key"), proxies)
+
     save_file(df, "ELECTRICITY_ACTUALS", output_dirpath)
-    
+
     logger.info("connecting to gas data")
     gassy = gasgetter(
         shopping_list_path=r"{}".format(os.environ.get("shopping_list_path")),
@@ -115,7 +110,7 @@ def main(start, end, output_dirpath, proxies):
         "GAS_ENERGY": "NTS Energy Offtaken",
         "GAS_CV": "Calorific Value",
         "GAS_GQ": "NTS SG Gas Quality",
-        "temperature": "Temperature, Actual, D+1"
+        "temperature": "Temperature, Actual",
     }
 
     for key in mapping.keys():
@@ -152,6 +147,4 @@ if __name__ == "__main__":
     else:
         proxies = None
 
-    main(
-        "2021-01-01", "2021-01-03", os.path.join(project_dir, "data/raw"), proxies
-    )
+    main("2015-01-01", "2021-01-01", os.path.join(project_dir, "data/raw"), proxies)
