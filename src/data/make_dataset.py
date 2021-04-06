@@ -13,12 +13,18 @@ import datetime as dt
 """
 
 
-def prepare_gas_volumes(filepath):
-    volume = get_data(filepath)
-    volume = volume.rename({"APPLICABLEFOR": "GAS_DAY"}, axis=1)
-    volume = volume.drop_duplicates()
+def prepare_gas_data(filepath, keep_powerstations_only=True):
+    df = get_data(filepath)
+    df = df.rename({"APPLICABLEFOR": "GAS_DAY"}, axis=1)
+    df = df.drop_duplicates()
+    df = keep_latest(df, cols=["GAS_DAY", "ITEM"])
+    df = df.set_index("GAS_DAY").tz_localize(None).reset_index()
+    df["POWERSTATION"] = df["ITEM"].str.contains("POWER STATION")
 
-    return volume[["ITEM", "GAS_DAY", "VALUE"]].sort_values(["GAS_DAY", "ITEM"])
+    if keep_powerstations_only:
+        df = df[df["POWERSTATION"]]
+
+    return df[["ITEM", "GAS_DAY", "VALUE"]].sort_values(["GAS_DAY", "ITEM"])
 
 
 def prepare_electricity_actuals(filepath):
@@ -31,7 +37,7 @@ def prepare_electricity_actuals(filepath):
         (elec["ELEC_DATETIME"] + dt.timedelta(hours=-5)).dt.date
     )
 
-    elec = keep_latest(elec, cols=["ELEC_DATETIME"]).reset_index()
+    elec = keep_latest(elec, cols=["ELEC_DATETIME"]).reset_index(drop=True)
 
     cols = [
         col
@@ -69,6 +75,20 @@ def get_data(filepath):
 def keep_latest(df, cols=["GAS_DAY"]):
     df = df.sort_values(cols + ["CREATED_ON"])
     df = df.groupby(cols).last()
+    return df.reset_index()
+
+
+def map_to_sites(df):
+    # grab the site from the item name
+    mapping = {}
+    for item in df["ITEM"].unique():
+        try:
+            site = item.split(",")[1].strip()
+            mapping[item] = site
+        except:
+            print(item)
+    df["SITE"] = df["ITEM"].map(mapping)
+    df["SITE"] = df["SITE"].astype("category")
     return df
 
 
@@ -79,6 +99,32 @@ def main(input_filepath, output_filepath):
     """
     logger = logging.getLogger(__name__)
     logger.info('making final data set from raw data')
+
+    elec = prepare_electricity_actuals(os.path.join(input_filepath, "ELECTRICITY_ACTUALS.csv")
+    daily_elec_averages = elec[["CCGT", "OCGT"]].fillna(0).sum(axis=1)
+    daily_elec_GWH=daily_elec_averages * 24 / 1000
+    
+    gas_energy=make_dataset.prepare_gas_data(os.path.join(input_filepath, "GAS_ENERGY.csv").rename({"VALUE": "ENERGY"}, axis=1)
+    gas_energy=map_to_sites(gas_energy)
+    gas_energy["ENERGY"] = gas_energy["ENERGY"].str.replace(",", "").astype(float)
+    gas_energy["ENERGY_GWH"] = gas_energy["ENERGY"] / 1000000
+
+    # calculate the daily average energy for all Powerstations
+    daily_gas_energy = (
+    gas_energy[gas_energy["POWERSTATION"]]
+    .groupby("GAS_DAY")["ENERGY_GWH"]
+    .sum()
+    .tz_localize(None)
+)
+
+    df = pd.DataFrame({"ELECTRICITY": daily_elec_GWH, "GAS": daily_gas_energy}).dropna()
+    df["EFFICIENCY"] = df["ELECTRICITY"] / df["GAS"]
+
+    gas_volume=make_dataset.prepare_gas_data(os.path.join(input_filepath, "GAS_VOLUME.csv").rename({"VALUE": "VOLUME"}, axis=1)
+    gas_volume=map_to_sites(gas_volume)
+
+    gas_cv=make_dataset.prepare_gas_data(os.path.join(input_filepath, "GAS_CV.csv").rename({"VALUE": "CV"}, axis=1)
+    gas_cv=map_to_sites(gas_cv)
 
 
 if __name__ == '__main__':
