@@ -15,6 +15,14 @@ def word_count_notebook(filename):
     return word_count
 ```
 
+    C:\Users\rachel.hassall\.conda\envs\charterful\lib\site-packages\nbformat\current.py:15: UserWarning: nbformat.current is deprecated.
+    
+    - use nbformat for read/write/validate public API
+    - use nbformat.vX directly to composing notebooks of a particular version
+    
+      warnings.warn("""nbformat.current is deprecated.
+    
+
 
 ```python
 import re
@@ -35,12 +43,12 @@ print(f"Total Word Count: {total_word_count}")
     0-introduction.ipynb
     147
     1-why-are-gas-fired-powerstations-important.ipynb
-    895
+    1228
     2-how-efficient-are-gas-fired-powerstations.ipynb
-    0
+    581
     3-what-affects-efficiency.ipynb
     0
-    Total Word Count: 1042
+    Total Word Count: 1956
     
 
 
