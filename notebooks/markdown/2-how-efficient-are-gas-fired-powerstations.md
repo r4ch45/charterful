@@ -213,22 +213,6 @@ fig2 = m.plot_components(forecast)
 
 ```
 
-
-    ---------------------------------------------------------------------------
-
-    ModuleNotFoundError                       Traceback (most recent call last)
-
-    <ipython-input-13-e5abe93f95dc> in <module>
-    ----> 1 from prophet import Prophet
-          2 
-          3 proph_data = df["EFFICIENCY"].reset_index()
-          4 proph_data = proph_data.rename({"GAS_DAY" : "ds", "EFFICIENCY" : "y"}, axis=1)
-          5 
-    
-
-    ModuleNotFoundError: No module named 'prophet'
-
-
 # Does Energy = Volume * CV?
 
 - Calorific value is in MJ/scm
@@ -1299,70 +1283,6 @@ sns.lineplot(
     ax=ax,
 )
 ```
-
-
-    ---------------------------------------------------------------------------
-
-    KeyError                                  Traceback (most recent call last)
-
-    ~\.conda\envs\charterful\lib\site-packages\pandas\core\indexes\base.py in get_loc(self, key, method, tolerance)
-       3079             try:
-    -> 3080                 return self._engine.get_loc(casted_key)
-       3081             except KeyError as err:
-    
-
-    pandas\_libs\index.pyx in pandas._libs.index.IndexEngine.get_loc()
-    
-
-    pandas\_libs\index.pyx in pandas._libs.index.IndexEngine.get_loc()
-    
-
-    pandas\_libs\hashtable_class_helper.pxi in pandas._libs.hashtable.PyObjectHashTable.get_item()
-    
-
-    pandas\_libs\hashtable_class_helper.pxi in pandas._libs.hashtable.PyObjectHashTable.get_item()
-    
-
-    KeyError: 'POWERSTATION'
-
-    
-    The above exception was the direct cause of the following exception:
-    
-
-    KeyError                                  Traceback (most recent call last)
-
-    <ipython-input-20-90113226e514> in <module>
-          2 
-          3 sns.lineplot(
-    ----> 4     data=gas_energy[gas_energy["POWERSTATION"]].dropna(),
-          5     x="GAS_DAY",
-          6     y="ENERGY",
-    
-
-    ~\.conda\envs\charterful\lib\site-packages\pandas\core\frame.py in __getitem__(self, key)
-       3022             if self.columns.nlevels > 1:
-       3023                 return self._getitem_multilevel(key)
-    -> 3024             indexer = self.columns.get_loc(key)
-       3025             if is_integer(indexer):
-       3026                 indexer = [indexer]
-    
-
-    ~\.conda\envs\charterful\lib\site-packages\pandas\core\indexes\base.py in get_loc(self, key, method, tolerance)
-       3080                 return self._engine.get_loc(casted_key)
-       3081             except KeyError as err:
-    -> 3082                 raise KeyError(key) from err
-       3083 
-       3084         if tolerance is not None:
-    
-
-    KeyError: 'POWERSTATION'
-
-
-
-    
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_38_1.png)
-    
-
 
 
 ```python
