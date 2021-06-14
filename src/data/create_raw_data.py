@@ -16,9 +16,42 @@ import logging
 from mipi import gasgetter
 from data_helper import test_internet_connection
 
+gas_mipi_mapping = {
+    "GAS_VOLUME": "NTS Physical Flows",
+    "GAS_ENERGY": "NTS Energy Offtaken",
+    "GAS_CV": "Calorific Value",
+    "GAS_GQ": "NTS SG Gas Quality",
+    "temperature": "Temperature, Actual",
+}
 
-def get_electricity_actuals(start, end, elexon_api_key, proxies):
 
+def save_file(df, name, directory):
+    """save dataframe within directory structure with relevant metadata
+
+    Args:
+        df (dataframe): data to save
+        name (string): filename to save
+        directory (string): path to desired saving directory
+    """
+    df["CREATED_ON"] = dt.datetime.today()
+    df.columns = df.columns.str.upper()
+
+    df.to_csv(os.path.join(directory, f"{name}.csv"))
+
+
+def get_electricity_actuals(start, end, elexon_api_key, proxies=None):
+    """
+    Gather all electricity actuals for a given time period from elexon
+
+    Args:
+        start (datetime): [description]
+        end (datetime): [description]
+        elexon_api_key (string): [description]
+        proxies (dict): [description]
+
+    Returns:
+        [dataframe]: [description]
+    """
     dfs = []
     day = start
 
@@ -74,28 +107,26 @@ def get_electricity_actuals(start, end, elexon_api_key, proxies):
     return final_df
 
 
-def save_file(df, name, directory):
-    df["CREATED_ON"] = dt.datetime.today()
-    df.columns = df.columns.str.upper()
-
-    df.to_csv(os.path.join(directory, f"{name}.csv"))
-
-
-def main(start, end, output_dirpath, proxies):
-    """ Runs data scripts to populate raw data in (../raw) from the internet.
-    """
-    logger = logging.getLogger(__name__)
-
-    logger.info("testing internet connection")
-    test_internet_connection("https://www.google.com", proxies)
-
-    start = dt.datetime.strptime(start, "%Y-%m-%d")
-    end = dt.datetime.strptime(end, "%Y-%m-%d")
-
-    logger.info("grabbing electricity actuals")
+def create_electricity_actuals_dataset(start, end, output_dirpath, proxies=None):
     df = get_electricity_actuals(start, end, os.environ.get("elexon_api_key"), proxies)
-
     save_file(df, "ELECTRICITY_ACTUALS", output_dirpath)
+    return
+
+
+def create_gas_dataset(key, start, end, output_dirpath, proxies=None):
+    gassy = gasgetter(
+        shopping_list_path=r"{}".format(os.environ.get("shopping_list_path")),
+        LatestFlag="Y",
+        proxies=proxies,
+    )
+    df = gassy.get_all_filtered(start, end, filter=gas_mipi_mapping[key])
+    save_file(df, key, output_dirpath)
+
+    return
+
+
+def create_all_gas(start, end, output_dirpath, proxies=None):
+    logger = logging.getLogger(__name__)
 
     logger.info("connecting to gas data")
     gassy = gasgetter(
@@ -105,25 +136,36 @@ def main(start, end, output_dirpath, proxies):
     )
     logger.info("connected to gas data")
 
-    mapping = {
-        "GAS_VOLUME": "NTS Physical Flows",
-        "GAS_ENERGY": "NTS Energy Offtaken",
-        "GAS_CV": "Calorific Value",
-        "GAS_GQ": "NTS SG Gas Quality",
-        "temperature": "Temperature, Actual",
-    }
-
-    for key in mapping.keys():
+    for key in gas_mipi_mapping.keys():
         logger.info(f"grabbing {key}")
         try:
-            df = gassy.get_all_filtered(start, end, filter=mapping[key])
+            df = gassy.get_all_filtered(start, end, filter=gas_mipi_mapping[key])
             print(df.head())
             save_file(df, key, output_dirpath)
         except Exception as E:
             print(E)
             logging.critical(f"Error gathering {key}")
 
-    logger.info("making final data set from raw data")
+
+def main(start, end, output_dirpath, proxies=None):
+    """ Runs data scripts to populate raw data in (../raw) from the internet.
+    """
+    logger = logging.getLogger(__name__)
+    logger.info("testing internet connection")
+    test_internet_connection("https://www.google.com", proxies)
+
+    start = dt.datetime.strptime(start, "%Y-%m-%d")
+    end = dt.datetime.strptime(end, "%Y-%m-%d")
+
+    logger.info("creating electricity actuals")
+    create_electricity_actuals_dataset(start, end, output_dirpath, proxies)
+    logger.info("created electricity actuals")
+
+    logger.info("creating all gas datasets")
+    create_all_gas(start, end, output_dirpath, proxies)
+    logger.info("created all gas datasets")
+
+    ## logger.info("making final data set from raw data")
 
 
 if __name__ == "__main__":

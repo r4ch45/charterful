@@ -89,7 +89,7 @@ class gasgetter:
             period_end = period_end + dt.timedelta(days=max_range_days)
 
         dfs = [d for d in dfs if d is not None]
-        if (len(dfs) > 0):
+        if len(dfs) > 0:
             total_df = pd.concat(dfs)
             return total_df
         else:
