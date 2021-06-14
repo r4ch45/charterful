@@ -8,9 +8,7 @@
 %load_ext lab_black
 
 import sys
-
-sys.path.append("..")
-from src.data import make_dataset
+import os
 
 import pandas as pd
 import numpy as np
@@ -20,6 +18,11 @@ import seaborn as sns
 from statsmodels.tsa.stattools import grangercausalitytests, adfuller
 import ppscore as pps
 import scipy
+
+sys.path.append("..")
+from src.data import make_dataset
+
+output_dirpath = r"..\\data\\raw"
 ```
 
     The autoreload extension is already loaded. To reload it, use:
@@ -42,7 +45,7 @@ Gas Fired Power Stations work using gas turbine engines, turbine engines general
 
 4. **Blow** - The high temperatures expands the gas out the back of the engine, turning rotar blades which are dual prupose. Firstly, the blades draw more gas in to the system, and secondly they are used to generate electricity.
 
-There are two types of gas fired power stations primarily used in the UK.
+There are primarily two types of gas fired power stations used in the UK.
 
 The first is CCGT (Combined Cycle Gas Turbine), this involves using a gas turbine to drive a gas turbine generator. Any excess heat is recovered by producing steam which drives a steam turbine generator for more electricity.
 
@@ -52,12 +55,14 @@ The second is OCGT (Open Cycle Gas Turbine), this is similar to CCGT but has an 
 
 
 ```python
-volume = make_dataset.prepare_gas_data(
-    r"C:\\Users\\rachel.hassall\\git\\charterful\\data\\raw\\GAS_VOLUME.csv"
-)
+key = "GAS_VOLUME"
+raw_gas_volume_path = os.path.join(output_dirpath, key + ".csv")
+if not os.path.isfile(raw_gas_volume_path):
+    print("Raw data doesn't exist, so gathering it")
+    create_gas_dataset(key, start, end, output_dirpath)
 
+volume = make_dataset.prepare_gas_data(raw_gas_volume_path)
 volume["YEAR"] = volume["GAS_DAY"].dt.year
-
 volume.groupby(["YEAR"])["ITEM"].nunique()
 ```
 
@@ -65,11 +70,11 @@ volume.groupby(["YEAR"])["ITEM"].nunique()
 
 
     YEAR
-    2016    187
-    2017    186
-    2018    185
-    2019    186
-    2020    183
+    2016    39
+    2017    38
+    2018    38
+    2019    38
+    2020    36
     Name: ITEM, dtype: int64
 
 
@@ -82,341 +87,15 @@ Gas electricity generation plays a crucial role in balancing renewable electrici
 
 
 ```python
-elec
-```
+key = "ELECTRICITY_ACTUALS"
+raw_elec_volume_path = os.path.join(output_dirpath, key + ".csv")
+if not os.path.isfile(raw_elec_volume_path):
+    print("Raw data doesn't exist, so gathering it")
+    create_electricity_actuals_dataset(start, end, output_dirpath)
 
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th></th>
-      <th>index</th>
-      <th>CCGT</th>
-      <th>OIL</th>
-      <th>COAL</th>
-      <th>NUCLEAR</th>
-      <th>WIND</th>
-      <th>PS</th>
-      <th>NPSHYD</th>
-      <th>OCGT</th>
-      <th>OTHER</th>
-      <th>INTFR</th>
-      <th>INTIRL</th>
-      <th>INTNED</th>
-      <th>INTEW</th>
-      <th>BIOMASS</th>
-      <th>INTNEM</th>
-      <th>INTELEC</th>
-      <th>INTIFA2</th>
-      <th>INTNSL</th>
-      <th>TED</th>
-    </tr>
-    <tr>
-      <th>GAS_DAY</th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>2015-12-31</th>
-      <td>4.0</td>
-      <td>6739.888889</td>
-      <td>0.0</td>
-      <td>3462.444444</td>
-      <td>8274.888889</td>
-      <td>3208.000000</td>
-      <td>4.222222</td>
-      <td>711.000000</td>
-      <td>0.000000</td>
-      <td>2019.222222</td>
-      <td>1756.000000</td>
-      <td>14.000000</td>
-      <td>877.333333</td>
-      <td>28.000000</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>27099.000000</td>
-    </tr>
-    <tr>
-      <th>2016-01-01</th>
-      <td>32.5</td>
-      <td>7374.125000</td>
-      <td>0.0</td>
-      <td>3534.270833</td>
-      <td>8160.187500</td>
-      <td>4092.708333</td>
-      <td>306.958333</td>
-      <td>806.666667</td>
-      <td>0.000000</td>
-      <td>1984.187500</td>
-      <td>1735.208333</td>
-      <td>48.541667</td>
-      <td>899.916667</td>
-      <td>50.375000</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>29025.645833</td>
-    </tr>
-    <tr>
-      <th>2016-01-02</th>
-      <td>80.5</td>
-      <td>9566.541667</td>
-      <td>0.0</td>
-      <td>3520.083333</td>
-      <td>7785.083333</td>
-      <td>4282.833333</td>
-      <td>330.750000</td>
-      <td>847.708333</td>
-      <td>0.000000</td>
-      <td>1951.354167</td>
-      <td>1783.333333</td>
-      <td>8.000000</td>
-      <td>879.541667</td>
-      <td>7.333333</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>31043.062500</td>
-    </tr>
-    <tr>
-      <th>2016-01-03</th>
-      <td>128.5</td>
-      <td>10650.979167</td>
-      <td>0.0</td>
-      <td>3436.666667</td>
-      <td>7821.333333</td>
-      <td>3811.958333</td>
-      <td>300.500000</td>
-      <td>721.812500</td>
-      <td>0.000000</td>
-      <td>2020.916667</td>
-      <td>1801.750000</td>
-      <td>87.291667</td>
-      <td>891.375000</td>
-      <td>100.791667</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>31773.875000</td>
-    </tr>
-    <tr>
-      <th>2016-01-04</th>
-      <td>176.5</td>
-      <td>14029.125000</td>
-      <td>0.0</td>
-      <td>5758.833333</td>
-      <td>7735.750000</td>
-      <td>3672.875000</td>
-      <td>326.458333</td>
-      <td>790.145833</td>
-      <td>4.375000</td>
-      <td>2038.208333</td>
-      <td>1946.291667</td>
-      <td>48.208333</td>
-      <td>846.958333</td>
-      <td>34.458333</td>
-      <td>0.000000</td>
-      <td>0.000000</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>NaN</td>
-      <td>37408.187500</td>
-    </tr>
-    <tr>
-      <th>...</th>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-      <td>...</td>
-    </tr>
-    <tr>
-      <th>2021-02-19</th>
-      <td>90058.5</td>
-      <td>7463.062500</td>
-      <td>0.0</td>
-      <td>680.687500</td>
-      <td>4836.541667</td>
-      <td>10810.520833</td>
-      <td>273.083333</td>
-      <td>727.354167</td>
-      <td>10.979167</td>
-      <td>181.750000</td>
-      <td>1422.500000</td>
-      <td>133.500000</td>
-      <td>752.083333</td>
-      <td>170.833333</td>
-      <td>1857.583333</td>
-      <td>728.625000</td>
-      <td>0.0</td>
-      <td>572.041667</td>
-      <td>0.0</td>
-      <td>120679.645833</td>
-    </tr>
-    <tr>
-      <th>2021-02-20</th>
-      <td>90106.5</td>
-      <td>6036.666667</td>
-      <td>0.0</td>
-      <td>249.708333</td>
-      <td>4362.895833</td>
-      <td>10582.770833</td>
-      <td>194.958333</td>
-      <td>722.562500</td>
-      <td>3.666667</td>
-      <td>183.229167</td>
-      <td>1155.333333</td>
-      <td>182.583333</td>
-      <td>537.958333</td>
-      <td>277.333333</td>
-      <td>1142.520833</td>
-      <td>696.500000</td>
-      <td>0.0</td>
-      <td>620.958333</td>
-      <td>0.0</td>
-      <td>117056.145833</td>
-    </tr>
-    <tr>
-      <th>2021-02-21</th>
-      <td>90154.5</td>
-      <td>11379.979167</td>
-      <td>0.0</td>
-      <td>204.645833</td>
-      <td>4299.666667</td>
-      <td>5744.395833</td>
-      <td>287.291667</td>
-      <td>841.020833</td>
-      <td>17.395833</td>
-      <td>224.979167</td>
-      <td>1638.958333</td>
-      <td>50.000000</td>
-      <td>821.625000</td>
-      <td>44.208333</td>
-      <td>2160.833333</td>
-      <td>873.666667</td>
-      <td>0.0</td>
-      <td>846.291667</td>
-      <td>0.0</td>
-      <td>119589.458333</td>
-    </tr>
-    <tr>
-      <th>2021-02-22</th>
-      <td>90202.5</td>
-      <td>13329.958333</td>
-      <td>0.0</td>
-      <td>921.812500</td>
-      <td>4294.312500</td>
-      <td>5175.916667</td>
-      <td>198.416667</td>
-      <td>836.187500</td>
-      <td>12.750000</td>
-      <td>217.750000</td>
-      <td>1794.166667</td>
-      <td>169.125000</td>
-      <td>855.458333</td>
-      <td>249.750000</td>
-      <td>2834.875000</td>
-      <td>796.250000</td>
-      <td>0.0</td>
-      <td>734.875000</td>
-      <td>0.0</td>
-      <td>122624.104167</td>
-    </tr>
-    <tr>
-      <th>2021-02-23</th>
-      <td>90234.0</td>
-      <td>7240.866667</td>
-      <td>0.0</td>
-      <td>329.333333</td>
-      <td>4291.866667</td>
-      <td>9349.200000</td>
-      <td>62.000000</td>
-      <td>734.266667</td>
-      <td>11.466667</td>
-      <td>169.800000</td>
-      <td>1174.666667</td>
-      <td>218.533333</td>
-      <td>689.733333</td>
-      <td>427.200000</td>
-      <td>2899.600000</td>
-      <td>622.800000</td>
-      <td>0.0</td>
-      <td>426.266667</td>
-      <td>0.0</td>
-      <td>118881.600000</td>
-    </tr>
-  </tbody>
-</table>
-<p>1882 rows × 20 columns</p>
-</div>
-
-
-
-
-```python
-elec = make_dataset.prepare_electricity_actuals(
-    r"C:\Users\rachel.hassall\git\charterful\data\raw\ELECTRICITY_ACTUALS.csv"
-).drop(["INTELEC", "INTNSL", "OIL"], axis=1)
+elec = make_dataset.prepare_electricity_actuals(raw_elec_volume_path).drop(
+    ["INTELEC", "INTNSL", "OIL"], axis=1
+)
 
 elec_as_percent_of_ted = elec.div(elec["TED"], axis=0)
 elec_as_percent_of_ted = elec_as_percent_of_ted.drop("TED", axis=1)
@@ -431,7 +110,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_9_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_8_0.png)
     
 
 
@@ -493,7 +172,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_12_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_11_0.png)
     
 
 
@@ -539,7 +218,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_18_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_17_0.png)
     
 
 
@@ -586,11 +265,11 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_22_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_21_0.png)
     
 
 
-## Grangers Causality
+## Grangers Causality [maybe remove this section, as previous is convincing enough]
 
 Granger's causality tests whether past values of one time series, x1, have a significantly significant effect from a sexond time series, x2.
 
