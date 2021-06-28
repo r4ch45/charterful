@@ -25,17 +25,9 @@ from src.data import make_dataset
 output_dirpath = r"..\\data\\raw"
 ```
 
-    The autoreload extension is already loaded. To reload it, use:
-      %reload_ext autoreload
-    The lab_black extension is already loaded. To reload it, use:
-      %reload_ext lab_black
-    
-
 # How efficient are gas fired power stations?
 
-To understand efficiency of gas fired power stations, we must first define what efficiency is. We're defining efficiency in the context of energy conversion, which simplifies the system to mean that efficiency is the total energy in, divided by the total energy out.
-
-To calculate this, we convert the total daily UK gas energy (using demand volume and calorific values for powerstations) to GWH/day.
+To understand efficiency of gas fired power stations, we must first define what efficiency is. We're defining efficiency in the context of energy conversion, which simplifies the system to mean that efficiency is the total energy in, divided by the total energy out. To calculate this, we convert the total daily UK gas energy (using demand volume and calorific values for powerstations) to GWH/day.
 
 Electricity data is given as average MW values per 30 minute settlement period, we convert this to a total GWH/day.
 
@@ -55,11 +47,13 @@ if not os.path.isfile(raw_elec_volume_path):
     create_electricity_actuals_dataset(start, end, output_dirpath)
 
 elec = make_dataset.prepare_electricity_actuals(raw_elec_volume_path)
-daily_elec_averages = elec[["CCGT", "OCGT"]].fillna(method="ffill").sum(axis=1) # a better way of fillna would be to take the average of the before and after
-daily_elec_GWH = daily_elec_averages * 24 / 1000 # convert to a total day GWH
+daily_elec_averages = (
+    elec[["CCGT", "OCGT"]].fillna(method="ffill").sum(axis=1)
+)  # a better way of fillna would be to take the average of the before and after
+daily_elec_GWH = daily_elec_averages * 24 / 1000  # convert to a total day GWH
 ```
 
-Electricity generation shows clear seasonality, which we explored partially in [1]. This is due to seasonally increased electricity demand, as well as fluctuations in wind and other generation components.
+Electricity generation from gas shows clear seasonality, this is due to seasonally increased electricity demand, as well as fluctuations in wind and other generation components.
 
 
 ```python
@@ -116,6 +110,9 @@ gas_energy["ENERGY"] = (
     gas_energy["ENERGY"].str.replace(",", "").astype(float)
 )  # some rogue string characters in there
 gas_energy["ENERGY_GWH"] = gas_energy["ENERGY"] / 1000000
+
+# calculate the daily average energy for all Powerstations
+daily_gas_energy = gas_energy.groupby("GAS_DAY")["ENERGY_GWH"].sum().tz_localize(None)
 ```
 
     C:\Users\rachel.hassall\.conda\envs\charterful\lib\site-packages\IPython\core\interactiveshell.py:3437: DtypeWarning: Columns (3) have mixed types.Specify dtype option on import or set low_memory=False.
@@ -124,18 +121,12 @@ gas_energy["ENERGY_GWH"] = gas_energy["ENERGY"] / 1000000
 
 
 ```python
-# calculate the daily average energy for all Powerstations
-daily_gas_energy = gas_energy.groupby("GAS_DAY")["ENERGY_GWH"].sum().tz_localize(None)
-```
-
-
-```python
 plot_series(daily_gas_energy.rename("Gas (GWH)"))
 ```
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_10_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_9_0.png)
     
 
 
@@ -170,7 +161,7 @@ plot_series(df["EFFICIENCY"].rename("Efficiency"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_13_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_12_0.png)
     
 
 
@@ -270,6 +261,8 @@ gas_volume.head()
 
 
 
+Now we have the gas volumes per powerstation, we can do some quick sense checks and get a feel for the distributions. Everything looks sensible!
+
 
 ```python
 fig, ax = plt.subplots(1, 1, figsize=(30, 10))
@@ -284,7 +277,7 @@ plt.legend()
 plt.show()
 ```
 
-    WARNING:matplotlib.legend:No handles with labels found to put in legend.
+    No handles with labels found to put in legend.
     
 
 
@@ -436,58 +429,6 @@ plt.show()
     
 
 
-
-```python
-gas_cv.groupby("SITE")["CV"].min().sort_values()
-```
-
-
-
-
-    SITE
-    DEESIDE           0.0000
-    PETERHEAD        29.4200
-    LANGAGE          36.4333
-    STALLINGBOR1     36.6200
-    STALLINGBOR2     36.6200
-    EPPINGGREEN      36.9500
-    TEESSIDE NSMP    36.9700
-    GRAIN            37.0000
-    BURTONPOINT      37.1000
-    GTYARMOUTH       37.2200
-    CORYTON          37.2300
-    KINGSLYNN        37.5300
-    CARRINGTON       37.5900
-    COTTAM           37.6300
-    SELLAFIELD       37.7100
-    CORBY            37.7200
-    ROCKSAVAGE       37.7800
-    SEABANK          37.8900
-    SALTEND          38.0800
-    PETERBORO        38.0800
-    GOWKHALL         38.1300
-    MARCHWOOD        38.2100
-    DIDCOT           38.2300
-    RYEHOUSE         38.2600
-    LTBARFORD        38.2900
-    STAYTHORPE       38.3200
-    BRIGG            38.3400
-    DAMHEADCREEK     38.3400
-    SUTTONBRIDGE     38.3600
-    WESTBURTONPS     38.3700
-    SPALDING         38.3800
-    BAGLANBAY        38.3800
-    SEABANKB         38.4500
-    MEDWAY           38.5000
-    KEADBYB          38.6000
-    BLACKBRIDGE      38.7300
-    THORNTONCURT     38.8100
-    ENRON            39.0000
-    KEADBY           39.0100
-    Name: CV, dtype: float64
-
-
-
 ## Compare Energy and Volume*CV
 
 [TO DO - explain this calculation a bit more]
@@ -506,14 +447,19 @@ Energy = Y kWh = Y *1000 J/s * h = Y * 1000 J/s * 60 * 60 s = Y * 60 *60 J
 
 
 ```python
+# get all the data in one dataframe to compare
 compare = gas_volume.merge(
     gas_cv, left_on=["GAS_DAY", "SITE"], right_on=["GAS_DAY", "SITE"]
 )
 compare = compare.merge(
     gas_energy, left_on=["GAS_DAY", "SITE"], right_on=["GAS_DAY", "SITE"]
 )
+
+# create our energy col
 compare["VOLUME_MULT_CV"] = compare["VOLUME"] * compare["CV"]
 compare["VOLUME_MULT_CV_GWH"] = compare["VOLUME_MULT_CV"] / 3.6
+
+# compare
 compare = compare[
     ["GAS_DAY", "SITE", "VOLUME", "CV", "VOLUME_MULT_CV_GWH", "ENERGY_GWH",]
 ]
@@ -670,7 +616,7 @@ compare
 
 
 
-There is consistently a small difference in energy between sites, looking at the total difference per day this is centred near 0 but can increase quite high both positively and negatively.
+There is consistently a small difference in energy vs volume*CV between sites (they should be the same). looking at the total difference per day this is centred near 0 but can increase quite high both positively and negatively.
 
 
 ```python
@@ -699,11 +645,11 @@ plot_series(compare.groupby("GAS_DAY")["DIFF_ENERGY"].sum())
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_30_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_29_0.png)
     
 
 
-It looks like there are some blips in differences between Energy and Volume*CV, interesting! I wonder which is correct...
+It looks like there are some blips in differences between Energy and Volume*CV, across multiple sites, interesting! I wonder which is correct...
 
 
 ```python
@@ -718,11 +664,9 @@ plt.show()
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_32_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_31_0.png)
     
 
-
-Worth investigating down the line where these differences come from. For our final comparison, let's calculate efficiency with the energy values dereived from volume and CV, to see if these give more realistic efficiency values.
 
 
 ```python
@@ -731,7 +675,7 @@ plot_series(daily_gas_energy.rename("Gas (GWH) from Energy"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_34_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_32_0.png)
     
 
 
@@ -746,9 +690,11 @@ plot_series(daily_gas_volume_mult_cv.rename("Gas (GWH) from Volume Multiplied by
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_35_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_33_0.png)
     
 
+
+Worth investigating down the line where these differences come from. For our final comparison, let's calculate efficiency with the energy values dereived from volume and CV, to see if these give more realistic efficiency values.
 
 This does indeed seem to reduce our efficiencies down to reasonable levels, fantastic! We shall use our the calculated Energy (from Volume and CV) for the remainder of this analysis.
 
@@ -783,7 +729,7 @@ plot_series(df["EFFICIENCY"].rename("Efficiency"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_38_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_37_0.png)
     
 
 
@@ -795,24 +741,21 @@ As it stands...
 
 Electricity Energy = Efficiency * Gas Energy
 
-Electricity Energy (UK) = Efficiency (Powerstation 1) * Gas Energy (Powerstation 1) + Efficiency (Powerstation 2) * Gas Energy (Powerstation 2) + ....
+Electricity Energy (UK) = Efficiency (Powerstation A) * Gas Energy (Powerstation A) + Efficiency (Powerstation B) * Gas Energy (Powerstation B) + ....
 
 $ UK Electricity Energy = \sum \limits _{i=1}  (Efficiency)_{i}{\(Gas Energy)}_{i} $
 
-We have this equation for various time periods, creating a series of simultaneous equations and an overdetermined system.
+We have this equation for various time periods, creating a series of simultaneous equations and an overdetermined system (more equations than required to solve, meaning some variations in the solution and not one clear solution.
 
 [https://dwightreid.com/blog/2015/09/21/python-how-to-solve-simultaneous-equations/]
 [https://en.wikipedia.org/wiki/Overdetermined_system]
 
 
 ```python
+# we set up our equations as a dataframe of multiple days, where each day is an equation
 gas_powerstations = (
     compare.groupby(["GAS_DAY", "SITE"])["VOLUME_MULT_CV_GWH"].sum().unstack()
 )
-```
-
-
-```python
 equations_df = df.merge(gas_powerstations, left_index=True, right_index=True)
 equations_df.head()
 ```
@@ -1015,6 +958,7 @@ equations_df.head()
 
 
 ```python
+# let's try and solve em!
 solved = np.linalg.lstsq(
     equations_df[gas_powerstations.columns].values,
     equations_df["ELECTRICITY"].values,

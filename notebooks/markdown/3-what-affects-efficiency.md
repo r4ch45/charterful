@@ -181,19 +181,11 @@ def plot_series(timeseries):
 
 # Does Efficiency change seasonally?
 
-In time series analysis, "seasonally" is used generically to mean patterns in data with a certain period. For example we can have yearly seasonality (winter effects) with a period of 365 days, as well as monthly seasonality (month end) with a period of 30 days and weekly seasonality (weekend effects) with a period of 7 days.
-
-We can begin to decompose any seasonal affects by doing autocorrelation analysis and comparing each value with a lagged version of itself i.e. compare today's value with the value from a year ago.
+In time series analysis, "seasonally" is used generically to mean patterns in data with a certain period. For example we can have yearly seasonality (winter effects) with a period of 365 days, as well as monthly seasonality (month end) with a period of 30 days and weekly seasonality (weekend effects) with a period of 7 days. From first glance, there doesn't seem to be any seasonality in there. If we were looking to simply remove the seasonality, and not understand it, we would difference the data.
 
 
 ```python
-from statsmodels.graphics import tsaplots
-
-fig, ax = plt.subplots(1, 1, figsize=(20, 10))
-
-lags = None
-
-a = tsaplots.plot_acf(df["EFFICIENCY"], lags=lags, ax=ax)
+plot_series(df["EFFICIENCY"])
 ```
 
 
@@ -202,31 +194,40 @@ a = tsaplots.plot_acf(df["EFFICIENCY"], lags=lags, ax=ax)
     
 
 
+We can begin to decompose any seasonal affects by doing autocorrelation analysis and comparing each value with a lagged version of itself i.e. compare today's value with the value from last week. We see some slight peaking every 7th day which indicates that there is some weekly seasonality in there, but primarily the highest autocorrelation is with yesterday. This means yesterday is similar to today in general.
+
 
 ```python
-b = tsaplots.plot_pacf(df["EFFICIENCY"], lags=lags)
+from statsmodels.graphics import tsaplots
+
+fig, ax = plt.subplots(2, 1, figsize=(20, 10))
+
+lags = None
+
+a = tsaplots.plot_acf(df["EFFICIENCY"], lags=lags, ax=ax[0])
+b = tsaplots.plot_pacf(df["EFFICIENCY"], lags=lags, ax=ax[1])
 ```
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_7_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_8_0.png)
     
 
 
-A more complex method is to build an additive model to understand various seasonal components, the facebook prophet library does this very well so let's have a look.
+A more complex method is to build an additive model to understand various seasonal components, the facebook prophet library does this very well so let's have a look. Using a simple seasonal_decompose doesn't show much other than a slight downware trend. Residuals are in and around =/- 5% which looks okay!
 
 
 ```python
 from statsmodels.tsa.seasonal import seasonal_decompose
 
-seasonality = seasonal_decompose(df["EFFICIENCY"], model="additive")
+seasonality = seasonal_decompose(df["EFFICIENCY"], model="additive", period=365)
 
 a = seasonality.plot()
 ```
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_9_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_10_0.png)
     
 
 
@@ -248,7 +249,7 @@ a = seasonality.plot()
 # fig2 = m.plot_components(forecast)
 ```
 
-# How does Temperature interact with CV?
+# How does Temperature interact?
 
 
 ```python
@@ -272,11 +273,13 @@ plot_series(temperature)
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_13_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_14_0.png)
     
 
 
-# Does Temperature affect Efficiency?
+## Does Temperature affect Efficiency?
+
+We can look at this in various ways, statistically with correlation analysis, or a multitude of various statistical tests but sometimes the best way to look at things is to simply visualise the data. Looking at the data we don't see any clear relationships between temperature and efficiency.
 
 
 ```python
@@ -286,21 +289,22 @@ df = df[df.index.year > 2017]
 
 
 ```python
-sns.scatterplot(data=df, x="TEMPERATURE", y="EFFICIENCY")
-plt.title("Temperature vs Average Powerstation Efficiency")
-plt.show()
-```
+fig, ax = plt.subplots(3, 1, figsize=(10, 10))
 
+sns.scatterplot(data=df, x="TEMPERATURE", y="EFFICIENCY", ax=ax[0])
+ax[0].set_title("Temperature vs Average Powerstation Efficiency")
 
-    
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_16_0.png)
-    
+sns.scatterplot(data=df.pct_change(), x="TEMPERATURE", y="EFFICIENCY", ax=ax[1])
+ax[1].set_title(
+    "Percent Change in Temperature vs Percent Change in Powerstation Efficiency"
+)
 
+sns.scatterplot(data=df.diff(), x="TEMPERATURE", y="EFFICIENCY", ax=ax[2])
+ax[2].set_title(
+    "Daily Change in Temperature vs Daily Change in Powerstation Efficiency"
+)
 
-
-```python
-sns.scatterplot(data=df.pct_change(), x="TEMPERATURE", y="EFFICIENCY")
-plt.title("Percent Change in Temperature vs Percent Change in Powerstation Efficiency")
+plt.tight_layout()
 plt.show()
 ```
 
@@ -310,18 +314,7 @@ plt.show()
     
 
 
-
-```python
-sns.scatterplot(data=df.diff(), x="TEMPERATURE", y="EFFICIENCY")
-plt.title("Daily Change in Temperature vs Daily Change in Powerstation Efficiency")
-plt.show()
-```
-
-
-    
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_18_0.png)
-    
-
+## with CV?
 
 # Archive
 

@@ -41,14 +41,14 @@ print(f"Total Word Count: {total_word_count}")
 ```
 
     0-introduction.ipynb
-    153
+    155
     1-why-are-gas-fired-powerstations-important.ipynb
-    1238
+    1299
     2-how-efficient-are-gas-fired-powerstations.ipynb
-    851
+    900
     3-what-affects-efficiency.ipynb
-    243
-    Total Word Count: 2485
+    382
+    Total Word Count: 2736
     
 
 

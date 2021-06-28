@@ -25,17 +25,11 @@ from src.data import make_dataset
 output_dirpath = r"..\\data\\raw"
 ```
 
-    The autoreload extension is already loaded. To reload it, use:
-      %reload_ext autoreload
-    The lab_black extension is already loaded. To reload it, use:
-      %reload_ext lab_black
-    
-
 # What are Gas Fired Power Stations?
 
 [https://www.energy.gov/fe/how-gas-turbine-power-plants-work]
 
-Gas Fired Power Stations work using gas turbine engines, turbine engines generally have four main parts to the process:
+Gas Fired Power Stations work using gas turbine engines. Turbine engines generally have four main parts to the process:
 
 1. **Suck** - Air is drawn in to the engine
 
@@ -45,6 +39,11 @@ Gas Fired Power Stations work using gas turbine engines, turbine engines general
 
 4. **Blow** - The high temperatures expands the gas out the back of the engine, turning rotar blades which are dual prupose. Firstly, the blades draw more gas in to the system, and secondly they are used to generate electricity.
 
+
+![../references/jet-engine-wikimedia.svg](../references/jet-engine-wikimedia.svg)
+
+[https://commons.wikimedia.org/wiki/File:Jet_engine.svg]
+
 There are primarily two types of gas fired power stations used in the UK.
 
 The first is CCGT (Combined Cycle Gas Turbine), this involves using a gas turbine to drive a gas turbine generator. Any excess heat is recovered by producing steam which drives a steam turbine generator for more electricity.
@@ -53,10 +52,16 @@ The second is OCGT (Open Cycle Gas Turbine), this is similar to CCGT but has an 
 
 # Historically
 
+The number of powerstations has stayed reasonably constant over the past 5 years. There were 36 power stations drawing gas from the NTS in 2020.
+ 
+[to do] what do other references indicate for a longer time period?
+
 
 ```python
 key = "GAS_VOLUME"
 raw_gas_volume_path = os.path.join(output_dirpath, key + ".csv")
+
+# if we don't have the gas volume data, then go get it
 if not os.path.isfile(raw_gas_volume_path):
     print("Raw data doesn't exist, so gathering it")
     create_gas_dataset(key, start, end, output_dirpath)
@@ -79,11 +84,9 @@ volume.groupby(["YEAR"])["ITEM"].nunique()
 
 
 
-There were 36 power stations drawing gas from the NTS in 2020.
-
 # Balancing Renewables
 
-Gas electricity generation plays a crucial role in balancing renewable electricity generation. Looking at Wind Generation from direct connections to the Electricity System (excluding distributed generation) and CCGT generation average values per gas day, as a fraction of total electricity generation (to counteract seasonal variations) it's visually clear that power station generation is used to counteract variation in wind.
+Gas electricity generation plays a crucial role in balancing renewable electricity generation. Looking at Wind Generation from direct connections to the Electricity System (excluding distributed generation) and CCGT generation average values per gas day, as a fraction of total electricity generation (to counteract seasonal variations) it's visually clear that power station generation is used to counteract variation in wind. Statistically speaking, we can prove this in a number of ways.
 
 
 ```python
@@ -99,22 +102,28 @@ elec = make_dataset.prepare_electricity_actuals(raw_elec_volume_path).drop(
 
 elec_as_percent_of_ted = elec.div(elec["TED"], axis=0)
 elec_as_percent_of_ted = elec_as_percent_of_ted.drop("TED", axis=1)
+
+fig, ax = plt.subplots(2, 1, figsize=(20, 10))
+
 elec_as_percent_of_ted[elec_as_percent_of_ted.index.year == 2020][
     ["CCGT", "WIND"]
-].plot(figsize=(40, 20))
-plt.title("Gas generation is used to counteract fluctuating wind generation")
-plt.ylabel("Fraction of Total Generation per Gas Day")
-plt.xlabel("Time")
+].plot(ax=ax[0])
+ax[0].set_title("Gas generation is used to counteract fluctuating wind generation")
+ax[0].set_ylabel("Fraction of Total Generation per Gas Day")
+ax[0].set_xlabel("Time")
+
+sns.scatterplot(data=elec_as_percent_of_ted, x="CCGT", y="WIND", ax=ax[1])
+ax[1].set_title("Wind vs CCGT")
+
+plt.tight_layout()
 plt.show()
 ```
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_8_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_7_0.png)
     
 
-
-Statistically speaking, we can prove this in a number of ways. Firstly, correlation analysis.
 
 ## Pearsons Correlation
 
@@ -131,18 +140,20 @@ It's important to note that this is a measure of linear correlation, and may ign
 
 
 ```python
-nobs = 20
+# create some initial fake data
+nobs = 30
 x = np.linspace(0, 10, nobs)
 basex = x + np.random.rand(nobs)
 df = pd.DataFrame({"x": basex, "y": x, "type": ["Linear"] * nobs})
 
-
+# exponential
 df = df.append(
     pd.DataFrame(
         {"x": basex, "y": 10 * np.power(0.5, x), "type": ["Exponential"] * nobs}
     )
 )
 
+# radial
 t = np.linspace(0, 2 * np.pi, nobs)
 r = [np.random.uniform(1, 5) for i in np.arange(nobs)]
 df = df.append(
@@ -151,12 +162,14 @@ df = df.append(
     )
 )
 
+# piecemeal
 df = df.append(
     pd.DataFrame(
         {"x": basex, "y": np.where(x < 5, x, -x + 10), "type": ["Piecemeal"] * nobs}
     )
 )
 
+# plot em all
 g = sns.lmplot(data=df, x="x", y="y", col="type", hue="type")
 
 
@@ -172,7 +185,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_11_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_9_0.png)
     
 
 
@@ -183,26 +196,26 @@ In our time series data of electricity generation from Wind and Gas, Pearson's r
 df = elec[["CCGT", "WIND"]].copy()
 
 r, p = scipy.stats.pearsonr(df.dropna()["CCGT"], df.dropna()["WIND"])
-print(f"Scipy computed Pearson r: {r} and p-value: {p}")
+print(f"Scipy computed Pearson r: {r:.3f} and p-value: {p:.3e}")
 ```
 
-    Scipy computed Pearson r: -0.5361356201066011 and p-value: 1.5357043092659718e-140
+    Scipy computed Pearson r: -0.536 and p-value: 1.536e-140
     
 
-If we normalise Gas and Wind generation by looking at it as a percentage of overall electricity generation (demand), we see the correlation increases further. This has the handy benefit of removing seasonal variations in electricity demand (high in winter, low in summer).
+If we normalise Gas and Wind generation by looking at it as a percentage of overall electricity generation (demand), we see the correlation increases further to -0.96 (a much more convincing val. This has the handy benefit of removing seasonal variations in electricity demand (high in winter, low in summer).
 
 
 ```python
 r, p = scipy.stats.pearsonr(
     elec_as_percent_of_ted.dropna()["CCGT"], elec_as_percent_of_ted.dropna()["WIND"]
 )
-print(f"Scipy computed Pearson r: {r} and p-value: {p}")
+print(f"Scipy computed Pearson r: {r:.3f} and p-value: {p:.3e}")
 ```
 
-    Scipy computed Pearson r: -0.9616758685743998 and p-value: 7.591777434269864e-48
+    Scipy computed Pearson r: -0.962 and p-value: 7.592e-48
     
 
-Now if we look at all components of generation as a percentage of overall electricity generation (demand) and apply the correlation calculation to give a correlation matrix with an absolute threshold of 0.4, this gives us a lot of information about the correlation between generation sources. We're primarily concerned with CCGT and OCGT generaiton, and understanding how that behaves in relation to other sources. This tells us that CCGT is inversely proportional to Wind, and Wind isn't correlated with anything else. This implies gas generation is the primary balancing measure for counteracting flexible wind generation.
+Now if we look at all components of generation as a percentage of overall electricity generation (demand) and apply the correlation calculation to give a correlation matrix with an absolute threshold of 0.4, this gives us a lot of information about the correlation between generation sources. We're primarily concerned with CCGT and OCGT generation, and understanding how that behaves in relation to other sources. This tells us that CCGT is inversely proportional to Wind (which we've already explored above), and Wind isn't correlated with anything else. This implies gas generation is the primary balancing measure for counteracting flexible wind generation.
 
 
 ```python
@@ -218,7 +231,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_17_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_15_0.png)
     
 
 
@@ -252,6 +265,8 @@ pps.score(elec_as_percent_of_ted, "WIND", "CCGT")
 
 
 
+PPS doesn't highlight any new relationships really!
+
 
 ```python
 matr = pps.matrix(elec_as_percent_of_ted).pivot(
@@ -265,7 +280,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_21_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_20_0.png)
     
 
 
@@ -289,7 +304,7 @@ Our Null hypothesis for this test is that Wind Generation does not cause Gas Gen
 
 The Null hypothesis for grangercausalitytests is that the time series in the second column, x2, does NOT Granger cause the time series in the first column, x1. Grange causality means that past values of x2 have a statistically significant effect on the current value of x1, taking past values of x1 into account as regressors. We reject the null hypothesis that x2 does not Granger cause x1 if the pvalues are below a desired size of the test.
 
-The null hypothesis for all four test is that the coefficients corresponding to past values of the second time series are zero.
+The null hypothesis for all four tests is that the coefficients corresponding to past values of the second time series are zero.
 
 
 
@@ -369,15 +384,15 @@ grangercausalitytests(elec_as_percent_of_ted[["CCGT", "WIND"]].dropna(), 1)
        'ssr_chi2test': (0.5544229115645959, 0.4565161052169894, 1),
        'lrtest': (0.5543412198112492, 0.4565492794706799, 1),
        'params_ftest': (0.5535386644967512, 0.456968467257192, 1878.0, 1.0)},
-      [<statsmodels.regression.linear_model.RegressionResultsWrapper at 0x1f353b2df40>,
-       <statsmodels.regression.linear_model.RegressionResultsWrapper at 0x1f353b2dbe0>,
+      [<statsmodels.regression.linear_model.RegressionResultsWrapper at 0x142e965a610>,
+       <statsmodels.regression.linear_model.RegressionResultsWrapper at 0x142e965afa0>,
        array([[0., 1., 0.]])])}
 
 
 
 # Outlook
 
-Future Energy Scenarios (FES) are created to help the UK prepare for our future energy requirements, they inform investment and policy decisions from government to industry level. FES Scenarios are built using extensive data and modelling, and involve looking at consumer demand across gas, electricity, industrial, residental and transport.
+We've explored why gas fired powerstations are important now for balancing renewable electricity generation, but what about in the future? Future Energy Scenarios (FES) are created to help the UK prepare for our future energy requirements, they inform investment and policy decisions from government to industry level. FES Scenarios are built using extensive data and modelling, and involve looking at consumer demand across gas, electricity, industrial, residental and transport.
 
 [https://www.nationalgrideso.com/document/173821/download] On a high level, there are four energy scenarios.
 
