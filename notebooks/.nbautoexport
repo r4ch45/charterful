@@ -1,0 +1,9 @@
+{
+  "export_formats": [
+    "markdown"
+  ],
+  "organize_by": "extension",
+  "clean": {
+    "exclude": []
+  }
+}
