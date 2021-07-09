@@ -52,6 +52,8 @@ The second is OCGT (Open Cycle Gas Turbine), this is similar to CCGT but has an 
 
 # Historically
 
+[to do] explain coal/gas and how they've been used as primary source.
+
 The number of powerstations has stayed reasonably constant over the past 5 years. There were 36 power stations drawing gas from the NTS in 2020.
  
 [to do] what do other references indicate for a longer time period?
@@ -84,7 +86,7 @@ volume.groupby(["YEAR"])["ITEM"].nunique()
 
 
 
-# Balancing Renewables
+# Currently - Balancing Renewables
 
 Gas electricity generation plays a crucial role in balancing renewable electricity generation. Looking at Wind Generation from direct connections to the Electricity System (excluding distributed generation) and CCGT generation average values per gas day, as a fraction of total electricity generation (to counteract seasonal variations) it's visually clear that power station generation is used to counteract variation in wind. Statistically speaking, we can prove this in a number of ways.
 
@@ -121,7 +123,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_7_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_8_0.png)
     
 
 
@@ -185,7 +187,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_9_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_10_0.png)
     
 
 
@@ -202,7 +204,7 @@ print(f"Scipy computed Pearson r: {r:.3f} and p-value: {p:.3e}")
     Scipy computed Pearson r: -0.536 and p-value: 1.536e-140
     
 
-If we normalise Gas and Wind generation by looking at it as a percentage of overall electricity generation (demand), we see the correlation increases further to -0.96 (a much more convincing val. This has the handy benefit of removing seasonal variations in electricity demand (high in winter, low in summer).
+If we normalise Gas and Wind generation by looking at it as a percentage of overall electricity generation (demand), we see the correlation increases further to -0.96 (a much more convincing value). This also has the handy benefit of removing seasonal variations in electricity demand (high in winter, low in summer).
 
 
 ```python
@@ -231,13 +233,13 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_15_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_16_0.png)
     
 
 
 ## Predictive Power Score
 
-The problem with pearsons correlation is that it only picks up linear correlation, as demonstrated in Figure XX. Another way to test how two variables are related, is to use a Predictive Power Score (PPS). PPS detects non-linear relationships by building a model to predice one variable from another, and assessing the performance compared to a baseline.
+The problem with pearsons correlation is that it only picks up linear correlation, as demonstrated in Figure XX. Another way to test how two variables are related, is to use a Predictive Power Score (PPS). PPS detects non-linear relationships by building a tree based model to predice one variable from another, and assessing the performance compared to a baseline.
 - A score of 0 means that the column x cannot predict the column y better than a naive baseline model.
 - A score of 1 means that the column x can perfectly predict the column y given the model.
 - A score between 0 and 1 states the ratio of how much potential predictive power the model achieved compared to the baseline model.
@@ -280,7 +282,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_20_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_21_0.png)
     
 
 
