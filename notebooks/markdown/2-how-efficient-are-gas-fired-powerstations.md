@@ -261,7 +261,7 @@ gas_volume.head()
 
 
 
-Now we have the gas volumes per powerstation, we can do some quick sense checks and get a feel for the distributions. Everything looks sensible!
+Now we have the gas volumes per powerstation, we can do some quick sense checks and get a feel for the distributions. Everything looks sensible (e.g. no negative volumes)!
 
 
 ```python
@@ -616,7 +616,7 @@ compare
 
 
 
-There is consistently a small difference in energy vs volume*CV between sites (they should be the same). looking at the total difference per day this is centred near 0 but can increase quite high both positively and negatively.
+There is consistently a small difference in energy vs volume*CV between sites (they should be the same). Looking at the total difference per day this is centred near 0 but can increase quite high both positively and negatively.
 
 
 ```python
@@ -649,7 +649,7 @@ plot_series(compare.groupby("GAS_DAY")["DIFF_ENERGY"].sum())
     
 
 
-It looks like there are some blips in differences between Energy and Volume*CV, across multiple sites, interesting! I wonder which is correct...
+It looks like there are some blips in differences between Energy and Volume*CV, across multiple sites, interesting! I wonder which is correct... It doesn't seem to be limited to a single site.
 
 
 ```python
@@ -668,24 +668,30 @@ plt.show()
     
 
 
-
-```python
-plot_series(daily_gas_energy.rename("Gas (GWH) from Energy"))
-```
-
-
-    
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_32_0.png)
-    
-
+The raw energy data seems to be lower than that calculated using Volume and CV.
 
 
 ```python
+fig, ax = plt.subplots(1, 2, figsize=(20, 10))
+ax[0].set_title(f"Energy Histogram")
+ax[1].set_title(f"Energy Over Time")
+
+# the energy from the data
+timeseries = daily_gas_energy.rename("Gas (GWH) from Energy")
+sns.histplot(timeseries, kde=True, ax=ax[0], label=timeseries.name, alpha=0.3)
+ax[1].plot(timeseries, label=timeseries.name)
+
 # calculate the daily average energy for all Powerstations
 daily_gas_volume_mult_cv = (
     compare.groupby("GAS_DAY")["VOLUME_MULT_CV_GWH"].sum().tz_localize(None)
 )
-plot_series(daily_gas_volume_mult_cv.rename("Gas (GWH) from Volume Multiplied by CV"))
+timeseries = daily_gas_volume_mult_cv.rename("Gas (GWH) from Volume Multiplied by CV")
+sns.histplot(
+    timeseries, kde=True, ax=ax[0], label=timeseries.name, alpha=0.3, color="orange"
+)
+ax[1].plot(timeseries, label=timeseries.name, color="orange")
+ax[1].legend()
+plt.show()
 ```
 
 
@@ -735,15 +741,15 @@ plot_series(df["EFFICIENCY"].rename("Efficiency"))
 
 # How efficient are individual gas fired power stations?
 
-We have total electricity actual data, and individual gas power station data. If we had individual electricity actual data it would be simple but as it stands we don't. However, maybe there is a way around this. Can we solve it without?
+We have total electricity actual data, and individual gas power station data. If we had individual electricity actual data it would be simple to calculate each individual powerstation's efficiency but as it stands we don't. However, maybe there is a way around this. Can we solve it without?
 
-As it stands...
+We know...
 
 Electricity Energy = Efficiency * Gas Energy
 
 Electricity Energy (UK) = Efficiency (Powerstation A) * Gas Energy (Powerstation A) + Efficiency (Powerstation B) * Gas Energy (Powerstation B) + ....
 
-$ UK Electricity Energy = \sum \limits _{i=1}  (Efficiency)_{i}{\(Gas Energy)}_{i} $
+$ UK Electricity Energy = \sum \limits _{i=1}  (Efficiency)_{i}*{(Gas Energy)}_{i} $
 
 We have this equation for various time periods, creating a series of simultaneous equations and an overdetermined system (more equations than required to solve, meaning some variations in the solution and not one clear solution.
 
@@ -756,7 +762,9 @@ We have this equation for various time periods, creating a series of simultaneou
 gas_powerstations = (
     compare.groupby(["GAS_DAY", "SITE"])["VOLUME_MULT_CV_GWH"].sum().unstack()
 )
-equations_df = df.merge(gas_powerstations, left_index=True, right_index=True)
+equations_df = df.merge(gas_powerstations, left_index=True, right_index=True).drop(
+    ["GAS", "EFFICIENCY"], axis=1
+)
 equations_df.head()
 ```
 
@@ -782,8 +790,6 @@ equations_df.head()
     <tr style="text-align: right;">
       <th></th>
       <th>ELECTRICITY</th>
-      <th>GAS</th>
-      <th>EFFICIENCY</th>
       <th>BAGLANBAY</th>
       <th>BLACKBRIDGE</th>
       <th>BRIGG</th>
@@ -791,6 +797,8 @@ equations_df.head()
       <th>CARRINGTON</th>
       <th>CORBY</th>
       <th>CORYTON</th>
+      <th>COTTAM</th>
+      <th>DAMHEADCREEK</th>
       <th>...</th>
       <th>SEABANKB</th>
       <th>SELLAFIELD</th>
@@ -832,8 +840,6 @@ equations_df.head()
     <tr>
       <th>2016-03-14</th>
       <td>362.7460</td>
-      <td>665.422143</td>
-      <td>0.545137</td>
       <td>18.820800</td>
       <td>88.305109</td>
       <td>0.0</td>
@@ -841,6 +847,8 @@ equations_df.head()
       <td>0.0</td>
       <td>0.0</td>
       <td>0.000000</td>
+      <td>16.381783</td>
+      <td>28.162952</td>
       <td>...</td>
       <td>0.000000</td>
       <td>6.856192</td>
@@ -856,8 +864,6 @@ equations_df.head()
     <tr>
       <th>2016-03-15</th>
       <td>392.7550</td>
-      <td>708.304806</td>
-      <td>0.554500</td>
       <td>20.070400</td>
       <td>90.905480</td>
       <td>0.0</td>
@@ -865,6 +871,8 @@ equations_df.head()
       <td>0.0</td>
       <td>0.0</td>
       <td>0.000000</td>
+      <td>14.150221</td>
+      <td>28.378930</td>
       <td>...</td>
       <td>0.000000</td>
       <td>6.869108</td>
@@ -880,8 +888,6 @@ equations_df.head()
     <tr>
       <th>2016-03-16</th>
       <td>393.2615</td>
-      <td>716.165089</td>
-      <td>0.549121</td>
       <td>19.087139</td>
       <td>93.481002</td>
       <td>0.0</td>
@@ -889,6 +895,8 @@ equations_df.head()
       <td>0.0</td>
       <td>0.0</td>
       <td>0.000000</td>
+      <td>19.215700</td>
+      <td>28.235037</td>
       <td>...</td>
       <td>0.435133</td>
       <td>6.950579</td>
@@ -904,8 +912,6 @@ equations_df.head()
     <tr>
       <th>2016-03-17</th>
       <td>406.4755</td>
-      <td>739.237716</td>
-      <td>0.549858</td>
       <td>20.169560</td>
       <td>86.904440</td>
       <td>0.0</td>
@@ -913,6 +919,8 @@ equations_df.head()
       <td>0.0</td>
       <td>0.0</td>
       <td>0.000000</td>
+      <td>17.615189</td>
+      <td>28.167780</td>
       <td>...</td>
       <td>11.073113</td>
       <td>7.053307</td>
@@ -928,8 +936,6 @@ equations_df.head()
     <tr>
       <th>2016-03-18</th>
       <td>407.2865</td>
-      <td>724.488819</td>
-      <td>0.562171</td>
       <td>20.052197</td>
       <td>96.429172</td>
       <td>0.0</td>
@@ -937,6 +943,8 @@ equations_df.head()
       <td>0.0</td>
       <td>0.0</td>
       <td>0.006512</td>
+      <td>17.303125</td>
+      <td>29.227487</td>
       <td>...</td>
       <td>0.000000</td>
       <td>5.428625</td>
@@ -951,152 +959,12 @@ equations_df.head()
     </tr>
   </tbody>
 </table>
-<p>5 rows × 42 columns</p>
+<p>5 rows × 40 columns</p>
 </div>
 
 
 
-
-```python
-# let's try and solve em!
-solved = np.linalg.lstsq(
-    equations_df[gas_powerstations.columns].values,
-    equations_df["ELECTRICITY"].values,
-    rcond=None,
-)
-equation_efficiencies = solved[0]
-equation_efficiencies
-```
-
-
-
-
-    array([ 6.69159965e-01,  4.82138685e-01,  8.08732302e-01,  5.11056059e-01,
-            4.55820796e-01,  4.67069551e-01,  5.07914152e-01,  4.09400745e-01,
-            6.73505559e-01,  1.09154336e+00,  5.13343841e-01, -6.26720897e-14,
-            4.09080013e-01,  1.05438321e+00,  6.24635010e-01,  5.45715628e-01,
-            5.71148413e-01, -9.20095012e-01,  4.24961757e-01,  6.51524811e-01,
-            5.46479043e-01,  6.82238712e-01,  4.73207706e-01,  7.04066497e-01,
-            5.14226626e-01,  5.88703395e-01,  4.87743978e-01,  6.32543926e-01,
-            5.47899924e-01,  5.01876415e-01,  9.67811190e-01,  5.23507066e-01,
-            4.22889715e-01,  4.50143557e-01,  6.04500242e-01,  4.40452717e-01,
-           -1.90910228e+00, -2.64699488e-01,  5.69578612e-01])
-
-
-
-Some of these efficiencies look wrong... some are negative!
-
-
-```python
-dict(zip(gas_powerstations.columns, equation_efficiencies))
-```
-
-
-
-
-    {'BAGLANBAY': 0.6691599645430082,
-     'BLACKBRIDGE': 0.4821386851275651,
-     'BRIGG': 0.8087323020180226,
-     'BURTONPOINT': 0.5110560587849334,
-     'CARRINGTON': 0.4558207958135827,
-     'CORBY': 0.4670695513461198,
-     'CORYTON': 0.5079141517994664,
-     'COTTAM': 0.40940074460246,
-     'DAMHEADCREEK': 0.6735055590398719,
-     'DEESIDE': 1.0915433584580363,
-     'DIDCOT': 0.5133438409753407,
-     'ENRON': -6.267208974009009e-14,
-     'EPPINGGREEN': 0.4090800131839058,
-     'GOWKHALL': 1.0543832083770133,
-     'GRAIN': 0.6246350101072495,
-     'GTYARMOUTH': 0.5457156275419409,
-     'KEADBY': 0.5711484131980787,
-     'KEADBYB': -0.9200950124812484,
-     'KINGSLYNN': 0.42496175743470616,
-     'LANGAGE': 0.65152481053177,
-     'LTBARFORD': 0.5464790434272288,
-     'MARCHWOOD': 0.6822387122992135,
-     'MEDWAY': 0.47320770588726635,
-     'PETERBORO': 0.704066497490231,
-     'PETERHEAD': 0.5142266264935381,
-     'ROCKSAVAGE': 0.5887033950919186,
-     'RYEHOUSE': 0.48774397831953775,
-     'SALTEND': 0.6325439259171648,
-     'SEABANK': 0.5478999236811262,
-     'SEABANKB': 0.5018764150796636,
-     'SELLAFIELD': 0.9678111898224643,
-     'SPALDING': 0.5235070659880657,
-     'STALLINGBOR1': 0.42288971516100854,
-     'STALLINGBOR2': 0.45014355666315065,
-     'STAYTHORPE': 0.6045002416073123,
-     'SUTTONBRIDGE': 0.4404527169563746,
-     'TEESSIDE NSMP': -1.9091022785219367,
-     'THORNTONCURT': -0.2646994878419772,
-     'WESTBURTONPS': 0.5695786124383363}
-
-
-
-D'oh, should have used the non negative least squares solver! [https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.nnls.html]
-
-This gives better results, but some efficiencies are greater than 1. Should have bounded the solution!
-
-
-```python
-from scipy.optimize import nnls
-
-equation_efficiencies = nnls(
-    equations_df[gas_powerstations.columns].values, equations_df["ELECTRICITY"].values,
-)[0]
-
-dict(zip(gas_powerstations.columns, equation_efficiencies))
-```
-
-
-
-
-    {'BAGLANBAY': 0.6868855205396764,
-     'BLACKBRIDGE': 0.47630411732685224,
-     'BRIGG': 0.6551232072075196,
-     'BURTONPOINT': 0.5124937497847317,
-     'CARRINGTON': 0.4541379785081559,
-     'CORBY': 0.4192665685903214,
-     'CORYTON': 0.5113201990626222,
-     'COTTAM': 0.4014249946439355,
-     'DAMHEADCREEK': 0.6684867450368452,
-     'DEESIDE': 1.0917921058029616,
-     'DIDCOT': 0.5126866255675715,
-     'ENRON': 0.0,
-     'EPPINGGREEN': 0.4138080725012415,
-     'GOWKHALL': 1.063678691199771,
-     'GRAIN': 0.6149078554104527,
-     'GTYARMOUTH': 0.5423550100454937,
-     'KEADBY': 0.5729578796954183,
-     'KEADBYB': 0.0,
-     'KINGSLYNN': 0.38778446834146374,
-     'LANGAGE': 0.6506807081147042,
-     'LTBARFORD': 0.5486753609233347,
-     'MARCHWOOD': 0.676394435051863,
-     'MEDWAY': 0.4784704317139611,
-     'PETERBORO': 0.6054746867581913,
-     'PETERHEAD': 0.508009010665043,
-     'ROCKSAVAGE': 0.5939098004533446,
-     'RYEHOUSE': 0.483387701882704,
-     'SALTEND': 0.6293150790013069,
-     'SEABANK': 0.5482499209813512,
-     'SEABANKB': 0.5036779611129293,
-     'SELLAFIELD': 0.8327514478752307,
-     'SPALDING': 0.5232159676391022,
-     'STALLINGBOR1': 0.41313170271883504,
-     'STALLINGBOR2': 0.44185782018828296,
-     'STAYTHORPE': 0.6028479010505965,
-     'SUTTONBRIDGE': 0.444919739947863,
-     'TEESSIDE NSMP': 0.0,
-     'THORNTONCURT': 0.0,
-     'WESTBURTONPS': 0.5649923935000122}
-
-
-
-Let's bound the solution between 0 and 1.
+We know the bounds of the solution, i.e. non-negative between 0 and 1, so we use a bounded linear least squares solver.
 
 
 ```python
@@ -1105,7 +973,7 @@ from scipy.optimize import lsq_linear
 equation_efficiencies = lsq_linear(
     equations_df[gas_powerstations.columns].values,
     equations_df["ELECTRICITY"].values,
-    bounds=(0, 1),
+    bounds=(0, 1),  # efficiencies should be between 0 and 1
     verbose=2,
 )
 
