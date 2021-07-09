@@ -25,14 +25,9 @@ from src.data import make_dataset
 output_dirpath = r"..\\data\\raw"
 ```
 
-    The autoreload extension is already loaded. To reload it, use:
-      %reload_ext autoreload
-    The lab_black extension is already loaded. To reload it, use:
-      %reload_ext lab_black
-    
-
 
 ```python
+# get the data we need
 key = "ELECTRICITY_ACTUALS"
 raw_elec_volume_path = os.path.join(output_dirpath, key + ".csv")
 if not os.path.isfile(raw_elec_volume_path):
@@ -48,6 +43,7 @@ daily_elec_GWH = daily_elec_averages * 24 / 1000  # convert to a total day GWH
 
 
 ```python
+# get the data we need
 key = "GAS_VOLUME"
 raw_gas_volume_path = os.path.join(output_dirpath, key + ".csv")
 if not os.path.isfile(raw_gas_volume_path):
@@ -86,6 +82,7 @@ daily_gas_energy = gas_energy.groupby("GAS_DAY")["ENERGY_GWH"].sum().tz_localize
 
 
 ```python
+# get the data we need
 df = pd.DataFrame({"ELECTRICITY": daily_elec_GWH, "GAS": daily_gas_energy}).dropna()
 df["EFFICIENCY"] = df["ELECTRICITY"] / df["GAS"]
 df.head()
@@ -181,7 +178,7 @@ def plot_series(timeseries):
 
 # Does Efficiency change seasonally?
 
-In time series analysis, "seasonally" is used generically to mean patterns in data with a certain period. For example we can have yearly seasonality (winter effects) with a period of 365 days, as well as monthly seasonality (month end) with a period of 30 days and weekly seasonality (weekend effects) with a period of 7 days. From first glance, there doesn't seem to be any seasonality in there. If we were looking to simply remove the seasonality, and not understand it, we would difference the data.
+In time series analysis, "seasonally" is used generically to mean patterns in data with a certain period. For example we can have yearly seasonality (winter effects) with a period of 365 days, as well as monthly seasonality (month end) with a period of 30 days and weekly seasonality (weekend effects) with a period of 7 days. From first glance, there doesn't seem to be any seasonality in there. If we were looking to simply remove the seasonality and not understand it fully, we would difference the data (look at the difference between today and yesterday).
 
 
 ```python
@@ -214,7 +211,7 @@ b = tsaplots.plot_pacf(df["EFFICIENCY"], lags=lags, ax=ax[1])
     
 
 
-A more complex method is to build an additive model to understand various seasonal components, the facebook prophet library does this very well so let's have a look. Using a simple seasonal_decompose doesn't show much other than a slight downware trend. Residuals are in and around =/- 5% which looks okay!
+A more complex method is to build an additive model to understand various seasonal components, the facebook prophet library does this very well but let's start with a simple seasonal_decompose. This doesn't show much other than a slight downward trend. Residuals are in and around =/- 5% which looks okay!
 
 
 ```python
@@ -249,6 +246,146 @@ a = seasonality.plot()
 # fig2 = m.plot_components(forecast)
 ```
 
+To further examine seasonality, we could explore a bunch of different things:
+- More detailed seasonal decomposition
+- Adding seasonal features (like day of the week, month, season) to the data to visualise and test
+- do a fourier transform and examine its components
+
+I'm going to try something a little out the box, and use the number of daylight hours to represent seasonality and examine any correlation there.
+
+
+```python
+from astral import LocationInfo
+from astral.sun import sun
+
+
+# set location to get sun data for
+city = LocationInfo("London", "England", "Europe/London", 51.5, -0.116)
+
+
+date_list = df.index
+
+days = []
+for adate in date_list:
+    day = sun(city.observer, date=adate)
+    day = pd.DataFrame(day, index=[adate.date()])
+    days.append(day)
+
+sundata = pd.concat(days)
+sundata.index.name = "GAS_DAY"
+sundata["DAYLIGHT_HOURS"] = sundata["sunset"] - sundata["sunrise"]
+sundata["DAYLIGHT_SECONDS"] = sundata["DAYLIGHT_HOURS"].dt.total_seconds()
+
+df = df.merge(
+    sundata["DAYLIGHT_SECONDS"], how="left", left_index=True, right_index=True
+)
+
+fig, ax = plt.subplots()
+
+df["DAYLIGHT_SECONDS"].plot(ax=ax)
+plt.title("Daylight Seconds over Time")
+plt.tight_layout()
+plt.show()
+```
+
+
+    
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_14_0.png)
+    
+
+
+We can see that the electricity and gas usage (which is linked to electricity demand) is inversely correlated with the daylight hours, i.e. when there is more daylight there is less electricity demand - which makes sense. There doesn't seem to be much visible with efficiency.
+
+
+```python
+from sklearn.preprocessing import MinMaxScaler
+
+x = df.values  # returns a numpy array
+min_max_scaler = MinMaxScaler()
+x_scaled = min_max_scaler.fit_transform(x)
+df_scaled = pd.DataFrame(x_scaled, columns=df.columns)
+
+fig, ax = plt.subplots(figsize=(10, 10))
+
+df_scaled.plot(ax=ax)
+plt.title("Scaled Features")
+plt.tight_layout()
+plt.show()
+```
+
+
+    
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_16_0.png)
+    
+
+
+
+```python
+df.corr()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>ELECTRICITY</th>
+      <th>GAS</th>
+      <th>EFFICIENCY</th>
+      <th>DAYLIGHT_SECONDS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>ELECTRICITY</th>
+      <td>1.000000</td>
+      <td>0.992647</td>
+      <td>0.208363</td>
+      <td>-0.313028</td>
+    </tr>
+    <tr>
+      <th>GAS</th>
+      <td>0.992647</td>
+      <td>1.000000</td>
+      <td>0.093784</td>
+      <td>-0.320732</td>
+    </tr>
+    <tr>
+      <th>EFFICIENCY</th>
+      <td>0.208363</td>
+      <td>0.093784</td>
+      <td>1.000000</td>
+      <td>0.043402</td>
+    </tr>
+    <tr>
+      <th>DAYLIGHT_SECONDS</th>
+      <td>-0.313028</td>
+      <td>-0.320732</td>
+      <td>0.043402</td>
+      <td>1.000000</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
 # How does Temperature interact?
 
 
@@ -270,12 +407,6 @@ temperature = temperature.groupby("GAS_DAY")["VALUE"].mean().rename("TEMPERATURE
 ```python
 plot_series(temperature)
 ```
-
-
-    
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_14_0.png)
-    
-
 
 ## Does Temperature affect Efficiency?
 
@@ -307,12 +438,6 @@ ax[2].set_title(
 plt.tight_layout()
 plt.show()
 ```
-
-
-    
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_17_0.png)
-    
-
 
 ## with CV?
 
