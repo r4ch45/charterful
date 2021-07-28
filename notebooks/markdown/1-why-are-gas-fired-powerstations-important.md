@@ -1,3 +1,6 @@
+# Set Up
+
+
 ```python
 # OPTIONAL: Load the "autoreload" extension so that code can change
 %load_ext autoreload
@@ -18,6 +21,12 @@ import seaborn as sns
 from statsmodels.tsa.stattools import grangercausalitytests, adfuller
 import ppscore as pps
 import scipy
+
+from IPython.display import (
+    display,
+    Image,
+    SVG,
+)  # for displaying the images dusch that markdown conversion is easy peasy
 
 sys.path.append("..")
 from src.data import make_dataset
@@ -40,9 +49,17 @@ Gas Fired Power Stations work using gas turbine engines. Turbine engines general
 4. **Blow** - The high temperatures expands the gas out the back of the engine, turning rotar blades which are dual prupose. Firstly, the blades draw more gas in to the system, and secondly they are used to generate electricity.
 
 
-![../references/jet-engine-wikimedia.svg](../references/jet-engine-wikimedia.svg)
 
-[https://commons.wikimedia.org/wiki/File:Jet_engine.svg]
+```python
+display(Image(filename="../references/jet-engine-wikimedia.png"))
+# [https://commons.wikimedia.org/wiki/File:Jet_engine.svg]
+```
+
+
+    
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_4_0.png)
+    
+
 
 There are primarily two types of gas fired power stations used in the UK.
 
@@ -123,7 +140,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_8_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_11_0.png)
     
 
 
@@ -187,7 +204,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_10_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_13_0.png)
     
 
 
@@ -233,7 +250,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_16_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_19_0.png)
     
 
 
@@ -282,7 +299,7 @@ plt.show()
 
 
     
-![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_21_0.png)
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_24_0.png)
     
 
 
@@ -412,9 +429,18 @@ investment in flexibility and zero carbon generation.
 required to achieve net zero. This is key to navigating increasing
 complexity at lowest cost for consumers.
 
-In all of these scenarios, National Grid project that Gas Fired Generation will continue to be important in some degree.
+In all of these scenarios, National Grid project that Gas Fired Generation will continue to be important in some degree.|
 
-![../references/GFOP2018-GasFiredDemand-FES.png](../references/GFOP2018-GasFiredDemand-FES.png)
+
+```python
+display(Image(filename="../references/GFOP2018-GasFiredDemand-FES.png"))
+```
+
+
+    
+![png](1-why-are-gas-fired-powerstations-important_files/1-why-are-gas-fired-powerstations-important_34_0.png)
+    
+
 
 [https://www.elexon.co.uk/article/bsc-insight-reliant-on-the-weather-a-review-of-weather-dependent-generation-in-gb/?utm_source=Newsweaver&utm_medium=email&utm_term=BSC+Insight%3A+Reliant+on+the+weather%3F+A+review+of+weather+dependent+generation+in+GB&utm_campaign=Newscast+847+for+information]
 

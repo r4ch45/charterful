@@ -1,3 +1,6 @@
+# Set Up
+
+
 ```python
 # OPTIONAL: Load the "autoreload" extension so that code can change
 %load_ext autoreload
@@ -187,7 +190,7 @@ plot_series(df["EFFICIENCY"])
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_6_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_7_0.png)
     
 
 
@@ -207,7 +210,7 @@ b = tsaplots.plot_pacf(df["EFFICIENCY"], lags=lags, ax=ax[1])
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_8_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_9_0.png)
     
 
 
@@ -224,7 +227,7 @@ a = seasonality.plot()
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_10_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_11_0.png)
     
 
 
@@ -290,7 +293,7 @@ plt.show()
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_14_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_15_0.png)
     
 
 
@@ -315,7 +318,7 @@ plt.show()
 
 
     
-![png](3-what-affects-efficiency_files/3-what-affects-efficiency_16_0.png)
+![png](3-what-affects-efficiency_files/3-what-affects-efficiency_17_0.png)
     
 
 
