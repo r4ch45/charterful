@@ -21,6 +21,7 @@ import scipy
 
 sys.path.append("..")
 from src.data import make_dataset
+from src.helpinghand import plot_series
 
 output_dirpath = r"..\\data\\raw"
 ```
@@ -57,31 +58,12 @@ Electricity generation from gas shows clear seasonality, this is due to seasonal
 
 
 ```python
-def plot_series(timeseries):
-    """
-    handy plots for a timeseries, histogram and also values over time
-    
-    Args:
-        timeseries (pd.Series) : data to plot
-    """
-    fig, ax = plt.subplots(1, 2, figsize=(20, 10))
-
-    sns.histplot(timeseries, kde=True, ax=ax[0])
-    ax[0].set_title(f"{timeseries.name} Histogram")
-
-    ax[1].plot(timeseries)
-    ax[1].set_title(f"{timeseries.name} Over Time")
-    plt.show()
-```
-
-
-```python
 plot_series(daily_elec_GWH.rename("Electricity (GWH)"))
 ```
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_6_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_5_0.png)
     
 
 
@@ -126,7 +108,7 @@ plot_series(daily_gas_energy.rename("Gas (GWH)"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_9_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_8_0.png)
     
 
 
@@ -161,7 +143,7 @@ plot_series(df["EFFICIENCY"].rename("Efficiency"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_12_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_11_0.png)
     
 
 
@@ -282,7 +264,7 @@ plt.show()
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_17_1.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_16_1.png)
     
 
 
@@ -425,7 +407,7 @@ plt.show()
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_23_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_22_0.png)
     
 
 
@@ -645,7 +627,7 @@ plot_series(compare.groupby("GAS_DAY")["DIFF_ENERGY"].sum())
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_29_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_28_0.png)
     
 
 
@@ -664,7 +646,7 @@ plt.show()
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_31_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_30_0.png)
     
 
 
@@ -696,7 +678,7 @@ plt.show()
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_33_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_32_0.png)
     
 
 
@@ -735,7 +717,7 @@ plot_series(df["EFFICIENCY"].rename("Efficiency"))
 
 
     
-![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_37_0.png)
+![png](2-how-efficient-are-gas-fired-powerstations_files/2-how-efficient-are-gas-fired-powerstations_36_0.png)
     
 
 
